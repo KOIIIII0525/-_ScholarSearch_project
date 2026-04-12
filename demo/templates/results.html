@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}{{ query }} - ScholarSearch{% endblock %}
+
+{% block nav_search %}
+<form action="/search" method="GET" class="nav-search-form">
+    <input type="text" name="q" value="{{ query }}" class="nav-search-input" placeholder="搜索论文...">
+    <input type="hidden" name="scoring" value="{{ scoring or 'bm25' }}">
+    <button type="submit" class="nav-search-btn">搜索</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    {% if not results %}
+    <div class="no-results">
+        <p>请输入搜索关键词</p>
+    </div>
+    {% elif results.total == 0 %}
+    <div class="no-results">
+        <h3>未找到与 "{{ query }}" 相关的论文</h3>
+        {% if correction %}
+        <p>您是不是想搜索: <a href="/search?q={{ correction }}&scoring={{ scoring }}" class="correction-link">{{ correction }}</a></p>
+        {% endif %}
+        <p>搜索建议:</p>
+        <ul>
+            <li>检查关键词拼写</li>
+            <li>尝试使用更通用的词汇</li>
+            <li>尝试启用查询扩展</li>
+        </ul>
+    </div>
+    {% else %}
+    <!-- 搜索信息栏 -->
+    <div class="search-info">
+        <div class="search-meta">
+            <span>共找到 <strong>{{ results.total }}</strong> 篇相关论文</span>
+            <span class="search-model">排序模型: {{ scoring|upper }}</span>
+        </div>
+
+        {% if correction %}
+        <div class="correction-bar">
+            <span>您是不是想搜索:</span>
+            <a href="/search?q={{ correction }}&scoring={{ scoring }}" class="correction-link">{{ correction }}</a>
+        </div>
+        {% endif %}
+
+        {% if expansion_info and expansion_info.expansions %}
+        <div class="expansion-bar">
+            <span>查询已扩展:</span>
+            {% for word, synonyms in expansion_info.expansions.items() %}
+            <span class="expansion-item">{{ word }} → {{ synonyms|join(', ') }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="results-layout">
+        <!-- 分面过滤侧栏 -->
+        <aside class="facets-sidebar">
+            <h3>过滤条件</h3>
+
+            {% if year_filter or category_filter %}
+            <div class="active-filters">
+                <h4>当前过滤</h4>
+                {% if year_filter %}
+                <a href="/search?q={{ query }}&scoring={{ scoring }}&sort={{ sort_by }}" class="filter-remove">
+                    年份: {{ year_filter }} ✕
+                </a>
+                {% endif %}
+                {% if category_filter %}
+                <a href="/search?q={{ query }}&scoring={{ scoring }}&sort={{ sort_by }}" class="filter-remove">
+                    分类: {{ category_filter }} ✕
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if results.facets.years %}
+            <div class="facet-group">
+                <h4>按年份</h4>
+                <ul class="facet-list">
+                    {% for year, count in results.facets.years.items() %}
+                    <li>
+                        <a href="/search?q={{ query }}&scoring={{ scoring }}&sort={{ sort_by }}&year={{ year }}&category={{ category_filter }}"
+                           class="facet-link {% if year == year_filter %}active{% endif %}">
+                            {{ year }} <span class="facet-count">({{ count }})</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if results.facets.categories %}
+            <div class="facet-group">
+                <h4>按分类</h4>
+                <ul class="facet-list">
+                    {% for cat, count in results.facets.categories.items() %}
+                    <li>
+                        <a href="/search?q={{ query }}&scoring={{ scoring }}&sort={{ sort_by }}&year={{ year_filter }}&category={{ cat }}"
+                           class="facet-link {% if cat == category_filter %}active{% endif %}">
+                            {{ cat }} <span class="facet-count">({{ count }})</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </aside>
+
+        <!-- 搜索结果主区域 -->
+        <div class="results-main">
+            {% for paper in results.results %}
+            <div class="result-card">
+                <h3 class="result-title">
+                    <a href="/paper/{{ paper.arxiv_id }}">{{ paper.highlight_title|safe }}</a>
+                </h3>
+                <div class="result-meta">
+                    <span class="result-authors">{{ paper.authors }}</span>
+                    <span class="result-date">{{ paper.published }}</span>
+                    {% if paper.categories %}
+                    <span class="result-categories">
+                        {% for cat in paper.categories.split(',') %}
+                        <span class="category-tag">{{ cat.strip() }}</span>
+                        {% endfor %}
+                    </span>
+                    {% endif %}
+                </div>
+                <p class="result-abstract">{{ paper.highlight_abstract|safe }}</p>
+                <div class="result-scores">
+                    <span class="score-badge" title="BM25/TF-IDF 相关度分数">
+                        相关度: {{ "%.4f"|format(paper.score) }}
+                    </span>
+                    {% if paper.pagerank > 0 %}
+                    <span class="score-badge pagerank-badge" title="PageRank 分数">
+                        PageRank: {{ "%.6f"|format(paper.pagerank) }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- 分页 -->
+            {% if results.total_pages > 1 %}
+            <div class="pagination">
+                {% if results.page > 1 %}
+                <a href="/search?q={{ query }}&page={{ results.page - 1 }}&scoring={{ scoring }}&sort={{ sort_by }}&year={{ year_filter }}&category={{ category_filter }}"
+                   class="page-link">上一页</a>
+                {% endif %}
+
+                {% for p in range(1, results.total_pages + 1) %}
+                    {% if p == results.page %}
+                    <span class="page-link active">{{ p }}</span>
+                    {% elif p <= 3 or p > results.total_pages - 3 or (p >= results.page - 2 and p <= results.page + 2) %}
+                    <a href="/search?q={{ query }}&page={{ p }}&scoring={{ scoring }}&sort={{ sort_by }}&year={{ year_filter }}&category={{ category_filter }}"
+                       class="page-link">{{ p }}</a>
+                    {% elif p == 4 or p == results.total_pages - 3 %}
+                    <span class="page-dots">...</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if results.page < results.total_pages %}
+                <a href="/search?q={{ query }}&page={{ results.page + 1 }}&scoring={{ scoring }}&sort={{ sort_by }}&year={{ year_filter }}&category={{ category_filter }}"
+                   class="page-link">下一页</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
