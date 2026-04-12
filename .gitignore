@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDE
+.idea/
+.vscode/
+
+# Environment
+.conda/
+venv/
+env/
+
+# Data & Index (can regenerate)
+data/
+index_dir/
+*.json
+
+# OS
+.DS_Store
+Thumbs.db

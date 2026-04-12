@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}{{ paper.title if paper else '未找到' }} - ScholarSearch{% endblock %}
+
+{% block nav_search %}
+<form action="/search" method="GET" class="nav-search-form">
+    <input type="text" name="q" class="nav-search-input" placeholder="搜索论文...">
+    <button type="submit" class="nav-search-btn">搜索</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    {% if not paper %}
+    <div class="no-results">
+        <h3>未找到该论文</h3>
+        <p><a href="/">返回首页</a></p>
+    </div>
+    {% else %}
+    <article class="paper-detail">
+        <h1 class="paper-title">{{ paper.title }}</h1>
+
+        <div class="paper-meta-detail">
+            <div class="meta-row">
+                <span class="meta-label">作者:</span>
+                <span class="meta-value">{{ paper.authors }}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">发布日期:</span>
+                <span class="meta-value">{{ paper.published }}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">分类:</span>
+                <span class="meta-value">
+                    {% for cat in paper.categories.split(',') %}
+                    <span class="category-tag">{{ cat.strip() }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">arXiv ID:</span>
+                <span class="meta-value">
+                    <a href="{{ paper.url }}" target="_blank">{{ paper.arxiv_id }}</a>
+                </span>
+            </div>
+            {% if pagerank_score > 0 %}
+            <div class="meta-row">
+                <span class="meta-label">PageRank 分数:</span>
+                <span class="meta-value">
+                    <span class="score-badge pagerank-badge">{{ "%.6f"|format(pagerank_score) }}</span>
+                </span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="paper-section">
+            <h2>摘要</h2>
+            <p class="paper-abstract">{{ paper.abstract }}</p>
+        </div>
+
+        {% if paper.references %}
+        <div class="paper-section">
+            <h2>引用论文</h2>
+            <ul class="reference-list">
+                {% for ref in paper.references %}
+                <li>
+                    <a href="/paper/{{ ref }}">{{ ref }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </article>
+
+    {% if similar_papers %}
+    <section class="similar-papers">
+        <h2>相似论文推荐</h2>
+        <p class="similar-desc">基于 TF-IDF 余弦相似度计算</p>
+        <div class="similar-list">
+            {% for sp in similar_papers %}
+            <div class="similar-card">
+                <h4>
+                    <a href="/paper/{{ sp.arxiv_id }}">{{ sp.title }}</a>
+                </h4>
+                <p class="similar-meta">
+                    {{ sp.get('authors_text', ', '.join(sp.get('authors', []))) }}
+                    | {{ sp.published }}
+                </p>
+                <p class="similar-abstract">{{ sp.abstract[:200] }}...</p>
+                <span class="score-badge">相似度: {{ "%.4f"|format(sp.semantic_score) }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

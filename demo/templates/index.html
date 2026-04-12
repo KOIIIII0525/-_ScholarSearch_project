@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}ScholarSearch - 学术论文搜索引擎{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <div class="home-logo">
+        <h1 class="home-title">
+            <span class="brand-icon-large">📚</span>
+            ScholarSearch
+        </h1>
+        <p class="home-subtitle">学术论文垂直搜索引擎</p>
+    </div>
+
+    <form action="/search" method="GET" class="search-form-home">
+        <div class="search-box-home">
+            <input type="text" name="q" id="search-input"
+                   placeholder="搜索论文标题、摘要、作者..."
+                   autocomplete="off" autofocus>
+            <button type="submit" class="search-btn-home">搜索</button>
+        </div>
+
+        <div class="advanced-toggle" onclick="toggleAdvanced()">
+            高级搜索选项 ▾
+        </div>
+
+        <div class="advanced-options" id="advanced-options" style="display:none;">
+            <div class="option-group">
+                <label>排序模型:</label>
+                <select name="scoring">
+                    <option value="bm25">BM25 (推荐)</option>
+                    <option value="tfidf">TF-IDF</option>
+                </select>
+            </div>
+            <div class="option-group">
+                <label>排序方式:</label>
+                <select name="sort">
+                    <option value="relevance">相关度</option>
+                    <option value="date">发布日期</option>
+                    <option value="pagerank">PageRank</option>
+                </select>
+            </div>
+            <div class="option-group">
+                <label>
+                    <input type="checkbox" name="expand" value="1">
+                    启用查询扩展 (WordNet 同义词)
+                </label>
+            </div>
+        </div>
+    </form>
+
+    <div class="home-features">
+        <div class="feature-card">
+            <h3>倒排索引 & BM25</h3>
+            <p>基于 Whoosh 的高效倒排索引，支持 BM25F 加权排序</p>
+        </div>
+        <div class="feature-card">
+            <h3>语义搜索</h3>
+            <p>TF-IDF 向量化 + 余弦相似度，发现语义相关论文</p>
+        </div>
+        <div class="feature-card">
+            <h3>PageRank</h3>
+            <p>基于引用关系图计算论文重要性，融合到搜索排序中</p>
+        </div>
+        <div class="feature-card">
+            <h3>智能纠错 & 扩展</h3>
+            <p>拼写纠错 + WordNet 同义词查询扩展，提升查全率</p>
+        </div>
+    </div>
+
+    {% if stats %}
+    <div class="home-stats">
+        <p>当前索引: <strong>{{ stats.doc_count }}</strong> 篇学术论文</p>
+    </div>
+    {% endif %}
+
+    <div class="search-tips">
+        <h4>搜索技巧</h4>
+        <ul>
+            <li><code>machine learning</code> - 基本搜索</li>
+            <li><code>"neural network"</code> - 短语精确匹配</li>
+            <li><code>deep AND learning</code> - 布尔 AND 查询</li>
+            <li><code>title:transformer</code> - 指定字段搜索</li>
+            <li><code>authors:wang</code> - 按作者搜索</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
