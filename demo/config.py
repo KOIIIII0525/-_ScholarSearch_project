@@ -37,4 +37,4 @@ SEMANTIC_TOP_K = 10
 FLASK_HOST = '0.0.0.0'
 FLASK_PORT = 5000
 FLASK_DEBUG = True
-SECRET_KEY = 'scholar-search-secret-key-2024'
+SECRET_KEY = os.environ.get('SCHOLARSEARCH_SECRET_KEY', 'dev-only-change-me')

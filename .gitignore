@@ -9,6 +9,9 @@ __pycache__/
 .vscode/
 
 # Environment
+.env
+.env.*
+!.env.example
 .conda/
 venv/
 env/
